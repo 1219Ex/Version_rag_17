@@ -1,0 +1,659 @@
+{
+  "name": "Document RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        96,
+        16
+      ],
+      "id": "e55aaa61-ed90-4a0e-99a1-9a6afbea3b7d",
+      "name": "When chat message received",
+      "webhookId": "4d381796-228e-46b9-9525-f17a63f682b8"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Eres un experto en ciberseguridad y análisis normativo. Tu misión es ayudar a analizar la Política de Seguridad de MIDTECH y compararla con normativas de referencia.\n\n## HERRAMIENTAS DISPONIBLES:\n\n1. **MIDTECH Policy Tool**: Base de conocimiento con el documento MIDTECH_Politica_Seguridad_PSI-3.pdf\n2. **Reference Documents Tool**: Base de conocimiento con documentos normativos (CELEX, LOPDGDD, ENS)\n\n## METODOLOGÍA DE TRABAJO:\n\n### Para preguntas sobre MIDTECH únicamente:\n- Usa SOLO \"MIDTECH Policy Tool\" UNA VEZ con una consulta bien formulada\n- Extrae y presenta la información solicitada\n- Cita las secciones relevantes del documento\n\n### Para comparaciones o análisis de cumplimiento:\n1. **Paso 1**: Consulta \"MIDTECH Policy Tool\" UNA VEZ para obtener qué dice MIDTECH sobre el tema\n2. **Paso 2**: Consulta \"Reference Documents Tool\" UNA VEZ para obtener los requisitos normativos\n3. **Paso 3**: Presenta un análisis comparativo estructurado con la información obtenida\n\n## INSTRUCCIONES CRÍTICAS:\n\n- **MÁXIMO ABSOLUTO**: 1 consulta por herramienta por pregunta (total 2 consultas máximo)\n- Usa consultas amplias y bien formuladas\n- NO hagas múltiples búsquedas iterativas\n- Si la primera búsqueda no es suficiente, trabaja con la información disponible\n- Presenta la información de forma clara y estructurada\n- Cita siempre las fuentes (nombre del documento y sección cuando esté disponible)\n\n## FORMATO DE RESPUESTA:\n\nSé directo y profesional. Responde con la información solicitada de forma clara y bien organizada.",
+          "maxIterations": 5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        480,
+        -192
+      ],
+      "id": "f143fea2-52bc-4239-8945-ea34076521a5",
+      "name": "AI Agent1",
+      "executeOnce": false,
+      "alwaysOutputData": false,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1T8X2CBDrN5f6KKm3XuA4gnJfJg_ohCLq",
+            "mode": "list",
+            "cachedResultName": "Todas_normas",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1T8X2CBDrN5f6KKm3XuA4gnJfJg_ohCLq"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        672,
+        416
+      ],
+      "id": "27596036-a90d-4f3c-8137-09e2d7f3e48b",
+      "name": "Search files and folders1",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "retryOnFail": false,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "IY3dqrHEZkZprmOk",
+          "name": "Google Drive account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-flash-lite-latest",
+        "options": {
+          "maxOutputTokens": 2048
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        32
+      ],
+      "id": "a8f96a3b-904b-4265-a391-34065119b9d9",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "SRTF6c5fPFpdg5s1",
+          "name": "Google Gemini(PaLM) Api account 4"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        448,
+        32
+      ],
+      "id": "2ae3d335-420f-4a7a-87a7-21396678dfe9",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {},
+      "id": "20bf0d92-c04f-482e-aeb9-ab7e2e5276fc",
+      "name": "Load Documents Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        96,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Busca información SOLO en el documento de Política de Seguridad de MIDTECH (MIDTECH_Politica_Seguridad_PSI-3.pdf). Usa esta herramienta primero para encontrar la información base.",
+        "memoryKey": {
+          "__rl": true,
+          "value": "midtech_policy_store",
+          "mode": "list",
+          "cachedResultName": "midtech_policy_store"
+        },
+        "topK": 5
+      },
+      "id": "0e233c1f-9af6-4c15-a8f6-ce9aacaada40",
+      "name": "MIDTECH Policy Tool",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        576,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Busca información en los documentos de referencia (CELEX, LOPDGDD, ENS) para comparar con la política de MIDTECH. Usa esta herramienta DESPUÉS de consultar MIDTECH Policy Tool.",
+        "memoryKey": {
+          "__rl": true,
+          "value": "reference_docs_store",
+          "mode": "list",
+          "cachedResultName": "reference_docs_store"
+        },
+        "topK": 5
+      },
+      "id": "6dbd2c1f-9773-4726-a8d1-48879c4f2103",
+      "name": "Reference Documents Tool",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        864,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.name }}",
+              "rightValue": "MIDTECH",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "26aa3c5c-ec42-4146-84dc-53b788ea79a0",
+      "name": "Filter MIDTECH Document",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1232,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "value": "midtech_policy_store",
+          "mode": "list",
+          "cachedResultName": "midtech_policy_store"
+        },
+        "embeddingBatchSize": 3
+      },
+      "id": "9efc0564-445f-4c92-9693-b2147d1c52c4",
+      "name": "Vector Store MIDTECH",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        1920,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "id": "6af2068c-7497-4dd2-b95e-dda11c728a9b",
+      "name": "Data Loader MIDTECH",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1904,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 800,
+        "chunkOverlap": 150,
+        "options": {}
+      },
+      "id": "5e445a4a-52e3-460f-a14a-5bb298c478bf",
+      "name": "Text Splitter MIDTECH",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.name }}",
+              "rightValue": "MIDTECH",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cc5ecea2-1d12-47b1-b815-aa4c9b55605d",
+      "name": "Filter Reference Documents",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1232,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "value": "reference_docs_store",
+          "mode": "list",
+          "cachedResultName": "reference_docs_store"
+        },
+        "embeddingBatchSize": 3
+      },
+      "id": "8be8813b-1386-4e12-b57b-291a6a8a0358",
+      "name": "Vector Store Reference",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        1920,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "id": "d2070311-de39-4f1a-a729-1c904e7f5ae0",
+      "name": "Data Loader Reference",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1904,
+        944
+      ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 800,
+        "chunkOverlap": 150,
+        "options": {}
+      },
+      "id": "74098173-cf77-4fc1-bea5-0a96948b2070",
+      "name": "Text Splitter Reference",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "9bc1055b-37e1-4011-b684-0e5b7391607e",
+      "name": "Download MIDTECH",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1456,
+        112
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "IY3dqrHEZkZprmOk",
+          "name": "Google Drive account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "768828a1-9f14-4ad2-b058-b0156f4b8d94",
+      "name": "Extract MIDTECH",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "bc7d87f8-b3e1-4acf-a83d-330439365992",
+      "name": "Download Reference",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1456,
+        720
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "IY3dqrHEZkZprmOk",
+          "name": "Google Drive account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "1b184369-f4aa-4efb-9f0a-990b8fbb2fa7",
+      "name": "Extract Reference",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        720
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "bdb747fe-5b7f-48bc-abe7-bf4ba9d515c3",
+      "name": "Shared Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        800,
+        240
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "K6zMJ5SsRM8alvce",
+          "name": "Google Gemini(PaLM) Api account 7"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "When chat message received": [
+      {
+        "json": {
+          "action": "sendMessage",
+          "sessionId": "ee4ae5d6d2594d25b032fc1b826556d2",
+          "chatInput": "describe las medidas de seguridad"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders1": {
+      "main": [
+        [
+          {
+            "node": "Filter MIDTECH Document",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter Reference Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Documents Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MIDTECH Policy Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reference Documents Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter MIDTECH Document": {
+      "main": [
+        [
+          {
+            "node": "Download MIDTECH",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Loader MIDTECH": {
+      "ai_document": [
+        [
+          {
+            "node": "Vector Store MIDTECH",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Splitter MIDTECH": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Data Loader MIDTECH",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Reference Documents": {
+      "main": [
+        [
+          {
+            "node": "Download Reference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Loader Reference": {
+      "ai_document": [
+        [
+          {
+            "node": "Vector Store Reference",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Splitter Reference": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Data Loader Reference",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download MIDTECH": {
+      "main": [
+        [
+          {
+            "node": "Extract MIDTECH",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract MIDTECH": {
+      "main": [
+        [
+          {
+            "node": "Vector Store MIDTECH",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Reference": {
+      "main": [
+        [
+          {
+            "node": "Extract Reference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Reference": {
+      "main": [
+        [
+          {
+            "node": "Vector Store Reference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shared Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "MIDTECH Policy Tool",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Reference Documents Tool",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Vector Store MIDTECH",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Vector Store Reference",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6af6fe47-e7f9-482a-b878-eff13100d249",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f99271378b793b369bdd4b22e281438752daecd9a03401c761af57f6c5a1bb18"
+  },
+  "id": "8hhn3yhVy8oMsmy6",
+  "tags": []
+}
