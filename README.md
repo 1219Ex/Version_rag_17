@@ -1,5 +1,5 @@
 ```python
-# Crear un contenido para el README.md profesional y estructurado
+
 readme_content = """# Asistente de Ciberseguridad y Compliance (TFC #include13)
 
 Este repositorio contiene la implementación técnica del asistente inteligente diseñado para **MIDTECH S.A.** como parte del Trabajo de Fin de Curso (TFC) del programa **#include13** de la Fundación GoodJob.
